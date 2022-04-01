@@ -1,6 +1,6 @@
 from numpy import pi, ones
 from numpy import array, zeros, dot
-from numpy.linalg import norm
+from numpy.linalg import norm, inv
 
 import os
 
