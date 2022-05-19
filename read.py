@@ -50,10 +50,7 @@ def readExport(
     nKz = maxKz - minKz + 1 
 
     # transfer momenta to an array
-    p_a5 = ones((nk, nKx, nKy, nKz, 3))
-    for k, pk_dict in enumerate(p_list):
-        for (Kx, Ky, Kz), p_ar in pk_dict.items():
-            p_a5[k, Kx, Ky, Kz] = p_ar
+    p_a5 = getPA5(p_list, nk, nKx, nKy, nKz)
 
     # record all coefficients listed in all wfc files
     C_a5 = getCA5(p_list, exroot, nk, nb, nKx, nKy, nKz)
@@ -173,6 +170,15 @@ def getPList(exroot, k_a2, b_a2, minKx, minKy, minKz, maxKx, maxKy, maxKz):
         p_list.append(pk_dict)
 
     return p_list, minKx, minKy, minKz, maxKx, maxKy, maxKz
+
+
+def getPA5(p_list, nk, nKx, nKy, nKz):
+    """Returns array of momenta."""
+    p_a5 = ones((nk, nKx, nKy, nKz, 3))
+    for k, pk_dict in enumerate(p_list):
+        for (Kx, Ky, Kz), p_ar in pk_dict.items():
+            p_a5[k, Kx, Ky, Kz] = p_ar
+    return p_a5
 
 
 def getCA5(p_list, exroot, nk, nb, nKx, nKy, nKz):
@@ -394,6 +400,11 @@ def readExport_kpts(
 #         pk_dict, minKx, minKy, minKz, maxKx, maxKy, maxKz = getPkDict(
 #                 grid, b_a2, k_ar, minKx, minKy, minKz, maxKx, maxKy, maxKz)
 #         p_list.append(pk_dict)
+
+#     p_a5 = ones((nk, nKx, nKy, nKz, 3))
+#     for k, pk_dict in enumerate(p_list):
+#         for (Kx, Ky, Kz), p_ar in pk_dict.items():
+#             p_a5[k, Kx, Ky, Kz] = p_ar
 
 #     wfc_list = ['{}/{}'.format(exroot, d) for d in os.listdir(exroot)
 #             if d[:4] == 'wfc.']

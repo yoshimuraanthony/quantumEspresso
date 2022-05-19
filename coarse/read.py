@@ -4,6 +4,7 @@ from numpy.linalg import norm, inv
 
 import os
 
+from quantumEspresso import readRawExport, getPlist, getCA5, sortByKpt
 from constants import *
 
 """Get coefficients C^n_{G+k} and PW momenta from pw_export output
@@ -52,23 +53,10 @@ def readExport(
     minKx, minKy, minKz = 0, 0, 0
 
     # record all RLVs listed in all coarse and dense grid files
-    grid2_list = ['{}/{}'.format(exroot2, d) for d in os.listdir(exroot2)
-            if 'grid.' in d]
-    grid2_list.sort(key=fileSort)
-    p2_list = []  # p2_dict[k] --> pk2_dict
-    for k_ar, grid in zip(k2_a2, grid2_list):
-        pk_dict, minKx, minKy, minKz, maxKx, maxKy, maxKz = getPkDict(
-                grid, b_a2, k_ar, minKx, minKy, minKz, maxKx, maxKy, maxKz)
-        p2_list.append(pk_dict)
-
-    grid3_list = ['{}/{}'.format(exroot3, d) for d in os.listdir(exroot3)
-            if 'grid.' in d]
-    grid3_list.sort(key=fileSort)
-    p3_list = []  # p3_dict[k] --> pk3_dict
-    for k_ar, grid in zip(k3_a2, grid3_list):
-        pk_dict, minKx, minKy, minKz, maxKx, maxKy, maxKz = getPkDict(
-                grid, b_a2, k_ar, minKx, minKy, minKz, maxKx, maxKy, maxKz)
-        p3_list.append(pk_dict)
+    p2_list, minKx, minKy, minKz, maxKx, maxKy, maxKz = getPList(
+                exroot2, k2_a2, b_a2, minKx, minKy, minKz, maxKx, maxKy, maxKz)
+    p3_list, minKx, minKy, minKz, maxKx, maxKy, maxKz = getPList(
+                exroot3, k3_a2, b_a2, minKx, minKy, minKz, maxKx, maxKy, maxKz)
 
     # array ranges
     nKx = maxKx - minKx + 1 
