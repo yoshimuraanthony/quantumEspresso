@@ -41,127 +41,34 @@ def readExport(
     exroot{2,3}: directory containing pw_export outputs (str)
         * usually {outdir}/{prefix}.export
     """
-    # Read coarse run
-    with open(f'{exroot2}/index.xml') as f:
-        for line in f:
-
-            if '<Kpoints' in line and 'nk' not in locals():
-                kline_list = line.split('"')
-                nk2 = int(kline_list[1])
-                nk2x = int(kline_list[5])
-                nk2y = int(kline_list[7])
-                nb = int(f.readline().split('"')[1])
-
-            if '<Cell' in line and 'volume' not in locals():
-                a_eq, v_eq = f.readline().split()[1:3]
-                alat = float(a_eq.split('"')[1])*bohrtoInvEV  # eV^{-1} 
-                volume = float(v_eq.split('"')[1])*bohrtoInvEV**3  # eV^{-3}
-
-                a_a2 = zeros((3, 3))
-                for n in range(3):
-                    a_a2[n] = array(f.readline().split('"')[1].split())\
-                            .astype(float)  # bohr
-                a_a2 *= bohrtoInvEV  # eV^{-1}
-                area = volume / norm(a_a2[2])  # eV^{-2}
-
-                b_a2 = zeros((3, 3))
-                for n in range(3):
-                    b_a2[n] = array(f.readline().split('"')[1].split())\
-                            .astype(float)  # bohr^{-1}
-                b_a2 *= invBohrtoEV  # eV
-
-            if '<k' in line and 'k2_a2' not in locals():
-                blat = 2*pi/alat
-                k2_a2 = zeros((nk2, 3))
-                for k in range(nk2):
-                    k2_a2[k] = array([float(val) for val in
-                            f.readline().split()])*blat  # eV
-
-            if '<Cutoff' in line and 'encut' not in locals():
-                encut = float(line.split('"')[1]) * rydtoEV  # eV
-
-            if '<Charge' in line and 'ne' not in locals():
-                ne = int(round(float(line.split('"')[1])))
-
-            if '<Eigenvalues' in line and 'E2_a2' not in locals():
-                E2_a2 = zeros((nk2, nb))
-                for k in range(nk2):
-                    f.readline()
-                    for b in range(nb):
-                        E2_a2[k, b] = float(f.readline())*rydtoEV  # eV
-                    f.readline()
-
-    # Read dense run. only need k3_a3 and E3_a3
-    with open(f'{exroot3}/index.xml') as f:
-        for line in f:
-
-            if '<Kpoints' in line and 'nk' not in locals():
-                kline_list = line.split('"')
-                nk3 = int(kline_list[1])
-                nk3x = int(kline_list[5])
-                nk3y = int(kline_list[7])
-
-            if '<k' in line and 'k_a2' not in locals():
-                k3_a2 = zeros((nk3, 3))
-                for k in range(nk3):
-                    k3_a2[k] = array([float(val) for val in
-                            f.readline().split()])*blat  # eV
-
-            if '<Eigenvalues' in line and 'E3_a2' not in locals():
-                E3_a2 = zeros((nk3, nb))
-                for k in range(nk3):
-                    f.readline()
-                    for b in range(nb):
-                        E3_a2[k, b] = float(f.readline())*rydtoEV  # eV
-                    f.readline()
+    # Read coarse and dense runs.  Only k_a2, E_a2, and nk{x,y} differ
+    k2_a2, E2_a2, b_a2, nk2, nk2x, nk2y, nb, ne, volume, area, encut \
+            = readRawExport(exroot2)
+    k3_a2, E3_a2, b_a2, nk3, nk3x, nk3y, nb, ne, volume, area, encut \
+            = readRawExport(exroot3)
 
     # find max Kx, Ky, and Kz so that all levels have same dimension
     maxKx, maxKy, maxKz = 0, 0, 0
     minKx, minKy, minKz = 0, 0, 0
 
-    # record all RLVs listed in all grid files
-    grid2_list = ['{}/{}'.format(exroot, d) for d in os.listdir(exroot)
+    # record all RLVs listed in all coarse and dense grid files
+    grid2_list = ['{}/{}'.format(exroot2, d) for d in os.listdir(exroot2)
             if 'grid.' in d]
     grid2_list.sort(key=fileSort)
     p2_list = []  # p2_dict[k] --> pk2_dict
-
-    for k2_ar, grid in zip(k2_a2, grid2_list):
+    for k_ar, grid in zip(k2_a2, grid2_list):
         pk_dict, minKx, minKy, minKz, maxKx, maxKy, maxKz = getPkDict(
-                grid
+                grid, b_a2, k_ar, minKx, minKy, minKz, maxKx, maxKy, maxKz)
+        p2_list.append(pk_dict)
 
-#         pk2_dict = {}  # pk2_dict[(Kx, Ky, Kz)] --> p_ar
-#         with open(grid) as f:
-#             for _ in range(5):
-#                 f.readline()
-#             nK = int(f.readline().split()[1].split('=')[1].strip('"'))
-#             for _ in range(nK + 3):
-#                 f.readline()
-# 
-#             # store RLVs
-#             K_list = []
-#             for n in range(nK):
-#                 K_ar = [int(val) for val in f.readline().split()]
-#                 Kx, Ky, Kz = K_ar
-# 
-#                 if Kx>maxKx:
-#                     maxKx = Kx
-#                 elif Kx<minKx:
-#                     minKx = Kx
-# 
-#                 if Ky>maxKy:
-#                     maxKy = Ky
-#                 elif Ky<minKy:
-#                     minKy = Ky
-# 
-#                 if Kz>maxKz:
-#                     maxKz = Kz
-#                 elif Kz<minKz:
-#                     minKz = Kz
-# 
-#                 p_ar = dot(K_ar, b_a2) + k2_ar  # eV
-#                 pk_dict[(Kx, Ky, Kz)] = p_ar
-
-        p_list.append(pk_dict)
+    grid3_list = ['{}/{}'.format(exroot3, d) for d in os.listdir(exroot3)
+            if 'grid.' in d]
+    grid3_list.sort(key=fileSort)
+    p3_list = []  # p3_dict[k] --> pk3_dict
+    for k_ar, grid in zip(k3_a2, grid3_list):
+        pk_dict, minKx, minKy, minKz, maxKx, maxKy, maxKz = getPkDict(
+                grid, b_a2, k_ar, minKx, minKy, minKz, maxKx, maxKy, maxKz)
+        p3_list.append(pk_dict)
 
     # array ranges
     nKx = maxKx - minKx + 1 
@@ -169,10 +76,15 @@ def readExport(
     nKz = maxKz - minKz + 1 
 
     # transfer momenta to an array
-    p_a5 = ones((nk, nKx, nKy, nKz, 3))
-    for k, pk_dict in enumerate(p_list):
+    p2_a5 = ones((nk, nKx, nKy, nKz, 3))
+    for k, pk2_dict in enumerate(p2_list):
         for (Kx, Ky, Kz), p_ar in pk_dict.items():
-            p_a5[k, Kx, Ky, Kz] = p_ar
+            p2_a5[k, Kx, Ky, Kz] = p_ar
+
+    p3_a5 = ones((nk, nKx, nKy, nKz, 3))
+    for k, pk3_dict in enumerate(p3_list):
+        for (Kx, Ky, Kz), p_ar in pk_dict.items():
+            p3_a5[k, Kx, Ky, Kz] = p_ar
 
     # record all coefficients listed in all wfc files
     wfc_list = ['{}/{}'.format(exroot, d) for d in os.listdir(exroot)
