@@ -203,6 +203,7 @@ def getCA5(p_list, exroot, nk, nb, nKx, nKy, nKz):
                         f.readline()
     return C_a5
 
+
 def sortByKpt(C_a5, p_a5, k_a2, E_a2, nb, nkx, nky, nKx, nKy, nKz):
     """Sorts arrays for meshed k-points and returns higher order arrays."""
     # sort k-points in order of increasing crystal momenta (ky runs fastest)
