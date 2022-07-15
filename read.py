@@ -197,8 +197,13 @@ def getCA5(p_list, exroot, nk, nb, nKx, nKy, nKz):
                     for n in range(nb):
                         f.readline()
                         for Kx, Ky, Kz in pk_dict:
-                            reC, ImC = [float(val) for val in
-                                    f.readline().split(',')]
+                            try:
+                                reC, ImC = [float(val) for val in
+                                        f.readline().split(',')]
+                            except ValueError:
+                                print('ValueError')
+                                print(f'file={wfc}')
+                                print(f.readline())
                             C_a5[k, n, Kx, Ky, Kz] = reC + 1j*ImC
                         f.readline()
     return C_a5
