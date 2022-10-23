@@ -9,13 +9,16 @@ from constants import hbar, c
 
 invAtoEV = hbar*c*1e10  # inverse angstrom to eV
 
-def prep_kcon(qmax=2000, qmin=300, infile='qscf.in'):
+def prep_kcon(qmax=2000, qmin=300, infile='qscf.in', unit='eV'):
     """Prepares input files for k-point mesh convergence.
 
     mesh increases by integer value of
-    q{max,min}: kpt spacing in eV for {coars,fin}est mesh (pos float)
+    q{max,min}: kpt spacing in {unit} for {coars,fin}est mesh (pos float)
     infile: qe input file with automatic k-point mesh (str)
+    unit: unit of q{min,max} (eV, invA, RLV)
     """
+    # TO DO:
+    # * choose units of q{min,max} (e.g. eV, invA, RLV)
     # get ratios of RLV magnitudes
     with open(infile) as f:
         for line in f:
@@ -61,24 +64,6 @@ def prep_kcon(qmax=2000, qmin=300, infile='qscf.in'):
                     f.write(line)
 
 
-def mod_kpts(k_list = [3, 3, 1], infile='qscf.in'):
-    """Prepares input file with new k-point mesh dimensions.
-
-    nkx: number of k-points along first RLV (pos int)
-    infile: qe input file with automatic k-point mesh (str)
-    """
-    line_list = read_input(infile)
-
-    newline_list = []
-#     for line in line_list:
-    with open(infile) as f:
-        for line in f:
-
-            if 'K_POINTS (automatic)' in line:
-                newkpts_list = []
-    
-    return b_a2
-
 def get_recip(a_a2):
     """returns reciprical cell as a rank 2 array."""
     b_a2 = zeros([3, 3])
@@ -91,6 +76,7 @@ def get_recip(a_a2):
         b_a2[i] = 2 * pi * cross_product / volume
 
     return b_a2
+
 
 def read_input(infile='qscf.in'):
     """returns input files as list of lines."""
